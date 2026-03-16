@@ -1,0 +1,42 @@
+If interviewer asks:
+
+“Design Bitly.”
+
+You say:
+
+I would build stateless API servers behind a load balancer. When a user submits a long URL, the system generates a unique ID which is encoded using Base62 to create a short code. The mapping between short code and original URL is stored in a database. Redirect requests first check Redis cache for fast lookup and fallback to the database if needed. Since read traffic is much higher than write traffic, caching and read replicas help scale the system.
+
+Common Follow-Up Questions
+
+Interviewers often ask:
+
+Q1
+
+How do you prevent collisions?
+
+Answer:
+Use auto-increment IDs or retry random generation.
+
+Q2
+
+How do you support custom URLs?
+
+Example:
+
+short.ly/myproduct
+
+Check if alias exists before storing.
+
+Q3
+
+How do you handle hot URLs?
+
+Use:
+
+CDN
+
+Redis
+
+caching headers
+
+
