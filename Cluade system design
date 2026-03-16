@@ -1,0 +1,25 @@
+Cluade system design
+
+Client
+  │
+  ▼
+API Gateway
+  │
+  ▼
+Request Processor
+  │
+  ├─ Safety Filters
+  ├─ Context Builder
+  └─ Retrieval System
+        │
+        ▼
+   Prompt Assembly
+        │
+        ▼
+   LLM Inference Cluster
+        │
+        ▼
+   Post-Processing
+        │
+        ▼
+   Streaming Response
