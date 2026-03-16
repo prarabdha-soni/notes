@@ -1,0 +1,266 @@
+1️⃣ HTTP & API DESIGN
+
+Q1: What happens when you type a URL in the browser?
+Browser performs DNS lookup to resolve domain → IP.
+TCP handshake happens (SYN → SYN-ACK → ACK).
+If HTTPS, TLS handshake occurs for encryption.
+Browser sends HTTP request with headers/body.
+Request hits load balancer or CDN.
+Load balancer forwards to backend server.
+Backend:
+
+Authentication
+
+Validation
+
+Business logic
+
+Database/cache queries
+Server sends HTTP response.
+Browser renders content.
+Senior mention: connection pooling, keep-alive, HTTP/2 multiplexing.
+
+Q2: Difference between PUT and PATCH?
+PUT replaces the entire resource.
+Example:
+PUT /users/1
+{
+"name": "John",
+"age": 25
+}
+PATCH updates partial fields.
+PATCH /users/1
+{
+"age": 26
+}
+PUT is idempotent while PATCH may not be.
+
+Q3: What is idempotency?
+An operation is idempotent if repeating it produces the same result.
+Example: PUT /users/1
+Calling it multiple times results in the same final state.
+POST is usually not idempotent unless implemented with idempotency keys.
+
+Q4: What is the difference between 401 and 403?
+401 → user not authenticated
+403 → user authenticated but not authorized
+
+2️⃣ DATABASES
+
+Q5: What are ACID properties?
+Atomicity: Transaction fully succeeds or fully fails.
+Consistency: Database remains in valid state.
+Isolation: Concurrent transactions do not interfere.
+Durability: Committed data survives crashes.
+Example: bank transfer.
+
+Q6: Why do we use indexes?
+Indexes improve query performance by avoiding full table scans.
+Most databases use B-Tree indexes.
+Example:
+CREATE INDEX idx_email ON users(email);
+Without index → scan entire table.
+
+Q7: Why can a query still be slow even with an index?
+Reasons:
+
+wrong index order
+
+low selectivity column
+
+function on indexed column
+Example:
+WHERE LOWER(email) = 'test@test.com'
+Index cannot be used efficiently.
+
+Q8: What is database isolation level?
+Isolation controls how transactions interact.
+Levels:
+
+Level	Issue possible
+Read Uncommitted	dirty reads
+Read Committed	non-repeatable reads
+Repeatable Read	phantom reads
+Serializable	fully isolated
+Serializable provides strongest guarantees but reduces concurrency.	
+3️⃣ AUTHENTICATION & SECURITY
+
+Q9: What is JWT?
+JWT is a signed token containing user claims.
+Structure: Header.Payload.Signature
+Payload example:
+{
+"sub": "123",
+"role": "admin",
+"exp": 123456789
+}
+JWT is signed, not encrypted.
+
+Q10: Why are refresh tokens used?
+Access tokens should expire quickly.
+Refresh tokens allow generating new access tokens without forcing user login again.
+
+Q11: Why not store JWT in localStorage?
+Because localStorage is vulnerable to XSS attacks.
+Better option: httpOnly cookies.
+
+4️⃣ CACHING
+
+Q12: What is cache-aside pattern?
+Application checks cache first.
+If miss:
+
+fetch from database
+
+store in cache
+
+return result.
+Example flow: Client → API → Redis → DB
+
+Q13: What is cache stampede?
+Many requests hit DB simultaneously when cache expires.
+Solutions:
+
+locking
+
+random TTL
+
+early refresh
+
+Q14: When should you NOT cache data?
+
+payment balances
+
+critical transactional data
+
+rapidly changing counters
+
+5️⃣ MESSAGE QUEUES
+
+Q15: Why use message queues?
+Queues decouple systems and allow asynchronous processing.
+Benefits:
+
+better scalability
+
+retries
+
+failure isolation
+Example: API → Queue → Worker
+
+Q16: What is at-least-once delivery?
+Messages may be delivered more than once.
+Consumers must be idempotent.
+
+Q17: What is a Dead Letter Queue?
+Messages that fail after retries are sent to DLQ for inspection.
+
+6️⃣ RATE LIMITING
+
+Q18: What is rate limiting?
+Restricting number of requests per client over time.
+Example: 100 requests per minute per user
+Used to prevent abuse.
+
+Q19: Explain Token Bucket algorithm.
+Bucket stores tokens.
+Requests consume tokens.
+Tokens refill over time.
+If bucket empty → request rejected.
+Allows bursts but enforces long-term limit.
+
+Q20: Why use Lua script in Redis rate limiter?
+Because Redis commands must be atomic.
+Without Lua: Two servers might read same counter simultaneously → race condition.
+Lua ensures all logic runs inside Redis as a single atomic operation.
+
+7️⃣ DISTRIBUTED LOCKS
+
+Q21: Why do we need distributed locks?
+To ensure only one node performs a critical operation.
+Examples:
+
+scheduled jobs
+
+payment processing
+
+inventory updates
+
+Q22: How does Redis distributed lock work?
+Use:
+SET lock_key value NX PX 30000
+NX → set if not exists
+PX → expiry time
+If command returns OK → lock acquired.
+
+Q23: Why do we need TTL in distributed locks?
+If process crashes without releasing lock, TTL prevents permanent deadlock.
+
+Q24: Why must unlock use Lua script?
+Because a process should only delete its own lock.
+Lua script verifies lock owner before deleting.
+
+8️⃣ CAP THEOREM
+
+Q25: What is CAP theorem?
+In distributed systems you cannot guarantee:
+
+Consistency
+
+Availability
+
+Partition tolerance
+simultaneously.
+During network partition you must choose between consistency and availability.
+
+Q26: What is partition tolerance?
+System continues operating despite network failures between nodes.
+In distributed systems this is unavoidable.
+
+Q27: Difference between CP and AP systems?
+CP systems sacrifice availability to maintain consistency.
+AP systems sacrifice consistency to remain available.
+Examples:
+CP → PostgreSQL replication
+AP → Cassandra
+
+9️⃣ SYSTEM DESIGN
+
+Q28: How should you approach system design questions?
+
+Clarify requirements
+
+Define scale
+
+Draw high-level architecture
+
+Deep dive into components
+
+Identify bottlenecks
+
+Discuss tradeoffs
+
+Discuss failure scenarios
+
+Q29: What is backpressure?
+Mechanism to slow incoming traffic when downstream services are overloaded.
+Prevents cascading failures.
+
+1️⃣0️⃣ COMMON SENIOR-LEVEL QUESTIONS
+
+Q30: What is eventual consistency?
+System allows temporary inconsistency but guarantees data convergence later.
+Used in AP systems.
+
+Q31: What is idempotency in distributed systems?
+Operations can be repeated safely without side effects.
+Used to handle retries and duplicate messages.
+
+Q32: Why is database often the bottleneck?
+Because:
+
+disk I/O
+
+transactional guarantees
+
+limited scaling compared to stateless services
